@@ -1,0 +1,9 @@
+psutil>=7.0
+qrcode[pil]>=8.0
+pillow>=10.4
+pyotp>=2.9
+customtkinter>=5.2
+pywin32>=306
+# development and releases
+pytest>=8.0
+pyinstaller>=6.10

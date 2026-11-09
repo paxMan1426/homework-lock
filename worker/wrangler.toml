@@ -1,0 +1,16 @@
+name = "homework-lock"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+DAILY_CHECKS = "10"          # homework checks per install per day
+DAILY_SESSIONS = "40"        # QR codes per install per day (each allows a few quick page reads)
+GLOBAL_DAILY_CHECKS = "300"  # all installs together: a ceiling on what the API key can spend in a day
+
+# Secrets (never in this file): wrangler secret put ANTHROPIC_API_KEY / wrangler secret put DISCORD_WEBHOOK
+
+[[d1_databases]]
+binding = "DB"
+database_name = "homework-lock"
+database_id = "753dd6b4-72eb-452f-8003-0b84ac1e9286"

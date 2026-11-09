@@ -1,0 +1,20 @@
+# Personal data: PIN hash, authenticator secret, logs. Never publish these.
+config.json
+config.tmp
+*.log
+*.pem
+
+# Build output
+build/
+dist/
+*.spec
+
+# Python / tools
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Worker
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars
