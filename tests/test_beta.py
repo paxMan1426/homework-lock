@@ -98,7 +98,8 @@ def test_update_check():
         release["tag_name"] = "v0.0.1"
         resp.__enter__.return_value.read.return_value = json.dumps(release).encode()
         assert updater.latest_update() is None
-    assert updater.latest_update() is None          # repo not filled in yet: never checks
+    with mock.patch.object(updater, "GITHUB_REPO", "YOUR-GITHUB-NAME/homework-lock"):
+        assert updater.latest_update() is None      # repo not filled in yet: never checks
 
 
 def test_setup_flag(tmp_path):
