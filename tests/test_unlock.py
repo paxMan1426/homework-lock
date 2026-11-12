@@ -301,6 +301,17 @@ def test_override_button_student_and_parent(root, make_window):
     ask.assert_not_called()
     assert not w.ctl.is_locked()
 
+    # after a use it moves: the old spot stops working, the new one works
+    old, new = 1, w.home._spot()
+    assert new != old
+    w.ctl.lock()
+    for _ in range(SECRET_TAPS):
+        w.home._secret_tap(old)
+    assert w.ctl.is_locked()
+    for _ in range(SECRET_TAPS):
+        w.home._secret_tap(new)
+    assert not w.ctl.is_locked() and w.home._spot() != new
+
     w = make_window(mode="parent")
     w.config.set_pin("2468")
     w.ctl.lock()

@@ -1,6 +1,7 @@
 """Home page: lock status, countdown, phone unlock QR, parent actions."""
 from __future__ import annotations
 
+import random
 import time
 import webbrowser
 from datetime import datetime
@@ -39,10 +40,10 @@ class HomePage(ctk.CTkFrame):
         self.qr_shown_at = 0.0
         self.qr_url = ""
 
-        label(self, "Home", 28, "bold").grid(row=0, column=0, sticky="w")
+        self.title = label(self, "Home", 28, "bold")
+        self.title.grid(row=0, column=0, sticky="w")
         self.subtitle = label(self, greeting(), 14, color=MUTED)
         self.subtitle.grid(row=1, column=0, sticky="w", pady=(0, 18))
-        self.subtitle.bind("<Button-1>", self._secret_tap)
         self._taps: list[float] = []
 
         # ---- status card: pill, big status / timer, detail, progress, actions ----
@@ -122,6 +123,7 @@ class HomePage(ctk.CTkFrame):
         self.facts = ctk.CTkFrame(self, fg_color="transparent")
         self.facts.grid(row=5, column=0, sticky="ew", pady=(16, 0))
         self.fact_values = {}
+        spots = [self.title, self.subtitle, self.pill, self.big, self.detail]
         for i, (key, title, ico, page) in enumerate([("apps", "Blocked apps", "apps", "apps"),
                                                      ("time", "Unlock time", "clock", "settings"),
                                                      ("mode", "Mode", "people", "settings")]):
@@ -132,19 +134,34 @@ class HomePage(ctk.CTkFrame):
                 anchor="w", padx=18, pady=(14, 0))
             self.fact_values[key] = label(f, "", 22, "bold")
             self.fact_values[key].pack(anchor="w", padx=18)
+            spots.append(self.fact_values[key])
             ctk.CTkButton(f, text="Change", command=lambda p=page: app.navigate(p), fg_color="transparent",
                           hover_color=SUBTLE, text_color=ACCENT, font=font(13), width=10, height=28,
                           image=icon("chevron", 11, ACCENT), compound="right", anchor="w").pack(
                 anchor="w", padx=10, pady=(0, 10))
+        # Every spot listens, but only the one saved in config counts; it moves after each use.
+        self.spots = spots
+        for i, w in enumerate(spots):
+            w.bind("<Button-1>", lambda e, i=i: self._secret_tap(i))
 
-    def _secret_tap(self, event=None):
+    def _spot(self) -> int:
+        s = self.app.config.get("override_spot")
+        return s if isinstance(s, int) and 0 <= s < len(self.spots) else 1
+
+    def _secret_tap(self, spot: int | None = None):
         if self.app.parent_mode() or not self.app.ctl.is_locked():
+            return
+        if spot is not None and spot != self._spot():
+            self._taps = []
             return
         now = time.time()
         self._taps = [t for t in self._taps if now - t < SECRET_WINDOW] + [now]
         if len(self._taps) >= SECRET_TAPS:
             self._taps = []
             self.app.override_unlock()
+            if not self.app.ctl.is_locked():
+                cur = self._spot()
+                self.app.config.set(override_spot=random.choice([i for i in range(len(self.spots)) if i != cur]))
 
     # ---------- QR ----------
     def show_qr(self, image, deadline: float, url: str = ""):
