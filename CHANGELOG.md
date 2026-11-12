@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.3 (2026-11-11)
+
+- Small fixes
+
 ## v0.1.2 (2026-11-11)
 
 - New Check answers setting: homework is only approved when the answers are right
