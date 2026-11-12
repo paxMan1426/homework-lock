@@ -1,5 +1,5 @@
 """App version and where the beta's online services live. release.py rewrites VERSION."""
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 # Your Cloudflare Worker, printed by `npx wrangler deploy` (no trailing slash).
 WORKER_URL = "https://homework-lock.homework-lock-worker.workers.dev"
