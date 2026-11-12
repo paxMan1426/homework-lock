@@ -34,7 +34,7 @@ async function liveSession(env, token) {
 }
 
 /** Repeat-photo checks, limits, then the AI check. images: [{bytes, type}]. */
-async function runCheck(env, install, images, note) {
+async function runCheck(env, install, images, note, checkAnswers) {
   const shas = await Promise.all(images.map((img) => sha256(img.bytes)));
   for (let i = 0; i < shas.length; i++) {
     for (let j = i + 1; j < shas.length; j++) {
@@ -56,7 +56,7 @@ async function runCheck(env, install, images, note) {
   }
   let result;
   try {
-    result = await checkPages(env, images, note);
+    result = await checkPages(env, images, note, checkAnswers);
   } catch (e) {
     // The service failed, not the student: give the check back.
     await env.DB.prepare("UPDATE usage SET checks = checks - 1 WHERE install = ? AND day = ?").bind(install, today()).run();
@@ -101,7 +101,7 @@ async function phoneSubmit(env, token, request) {
   if (claimed.meta.changes !== 1) return html(expiredPage(), 410);
   let result;
   try {
-    result = await runCheck(env, s.install, images, note);
+    result = await runCheck(env, s.install, images, note, Boolean(s.check_answers));
   } catch (e) {
     result = reject(`Could not check the photos: ${e.message}`);
   } finally {
@@ -137,8 +137,8 @@ async function createSession(env, request, origin) {
   }
   await env.DB.prepare("DELETE FROM sessions WHERE created < ?").bind(Date.now() - 24 * 3600 * 1000).run();
   const token = newToken();
-  await env.DB.prepare("INSERT INTO sessions (token, install, created, allow_uploads) VALUES (?, ?, ?, ?)")
-    .bind(token, body.install, Date.now(), body.allow_uploads === false ? 0 : 1).run();
+  await env.DB.prepare("INSERT INTO sessions (token, install, created, allow_uploads, check_answers) VALUES (?, ?, ?, ?, ?)")
+    .bind(token, body.install, Date.now(), body.allow_uploads === false ? 0 : 1, body.check_answers === true ? 1 : 0).run();
   return json({ token, url: `${origin}/s/${token}`, expires_in: SESSION_TTL_MS / 1000 });
 }
 
@@ -165,7 +165,7 @@ async function pcCheck(env, request) {
     return json(reject(e instanceof PhotoProblem ? e.message : "The photos didn't upload properly."));
   }
   try {
-    return json(await runCheck(env, install, images, ""));
+    return json(await runCheck(env, install, images, "", form.get("check_answers") === "1"));
   } catch (e) {
     return json(reject(`Could not check the photos: ${e.message}`));
   } finally {

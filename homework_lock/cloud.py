@@ -82,7 +82,8 @@ def shrink(data: bytes) -> bytes:
 def new_session(config: Config) -> tuple[str, str]:
     """Start a phone scan. Returns (token, url for the QR code)."""
     r = _request("POST", "/api/session", _json({"install": config.install_id(),
-                                                  "allow_uploads": bool(config.get("allow_uploads"))}))
+                                                  "allow_uploads": bool(config.get("allow_uploads")),
+                                                  "check_answers": bool(config.get("check_answers"))}))
     return r["token"], r["url"]
 
 
@@ -95,7 +96,8 @@ def poll(config: Config, token: str) -> dict:
 def check_photos(config: Config, pages: list[bytes]) -> dict:
     """Check photos picked on this PC. Returns the verdict {"approved", "reason", "subject", "pages"}."""
     files = [("photo", f"page{i}.jpg", shrink(p)) for i, p in enumerate(pages, 1)]
-    body, ctype = _multipart({"install": config.install_id()}, files)
+    body, ctype = _multipart({"install": config.install_id(),
+                              "check_answers": "1" if config.get("check_answers") else "0"}, files)
     return _request("POST", "/api/check", body, ctype, timeout=CHECK_TIMEOUT)
 
 

@@ -42,6 +42,8 @@ class HomePage(ctk.CTkFrame):
         label(self, "Home", 28, "bold").grid(row=0, column=0, sticky="w")
         self.subtitle = label(self, greeting(), 14, color=MUTED)
         self.subtitle.grid(row=1, column=0, sticky="w", pady=(0, 18))
+        self.subtitle.bind("<Button-1>", self._secret_tap)
+        self._taps: list[float] = []
 
         # ---- status card: pill, big status / timer, detail, progress, actions ----
         card = Card(self)
@@ -51,8 +53,6 @@ class HomePage(ctk.CTkFrame):
         self.pill = ctk.CTkLabel(inner, text="", font=font(12, "bold"), corner_radius=13, height=28, padx=12,
                                  compound="left")
         self.pill.pack(anchor="w")
-        self.pill.bind("<Button-1>", self._secret_tap)
-        self._taps: list[float] = []
         self.big = label(inner, "", 44, "bold")
         self.big.pack(anchor="w", pady=(10, 0))
         self.detail = label(inner, "", 15, color=MUTED, wraplength=640)

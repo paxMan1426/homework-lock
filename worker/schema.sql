@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   status TEXT NOT NULL DEFAULT 'open', -- open | checking | done
   result TEXT,                       -- JSON verdict once done
   reads INTEGER NOT NULL DEFAULT 0,
-  allow_uploads INTEGER NOT NULL DEFAULT 1
+  allow_uploads INTEGER NOT NULL DEFAULT 1,
+  check_answers INTEGER NOT NULL DEFAULT 0 -- existing DBs: ALTER TABLE sessions ADD COLUMN check_answers INTEGER NOT NULL DEFAULT 0
 );
 
 -- Per-install daily counters for rate limits.

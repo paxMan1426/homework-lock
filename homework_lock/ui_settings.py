@@ -74,32 +74,37 @@ class SettingsPage(ctk.CTkFrame):
         self.uploads_switch = ctk.CTkSwitch(right, text="", command=self.on_uploads, **SWITCH)
         self.uploads_switch.pack(anchor="e")
 
+        # ---- check answers ----
+        self.answers_card, right = self._card(body, 3, "check", "Check answers", "")
+        self.answers_switch = ctk.CTkSwitch(right, text="", command=self.on_answers, **SWITCH)
+        self.answers_switch.pack(anchor="e")
+
         # ---- mode ----
-        c, right = self._card(body, 3, "people", "Mode", "")
+        c, right = self._card(body, 4, "people", "Mode", "")
         self.mode_desc = c.desc
         self.mode_seg = ctk.CTkSegmentedButton(right, values=["Student", "Parent"], command=self.on_mode,
                                                font=font(14), width=240, **SEGMENTED)
         self.mode_seg.pack(anchor="e")
 
         # ---- PIN ----
-        c, right = self._card(body, 4, "key", "Parent PIN", "")
+        c, right = self._card(body, 5, "key", "Parent PIN", "")
         self.pin_desc = c.desc
         self.pin_btn = button(right, "", self.on_pin, kind="secondary", width=160)
         self.pin_btn.pack(anchor="e")
 
         # ---- authenticator ----
-        c, right = self._card(body, 5, "phone", "Parent authenticator", "")
+        c, right = self._card(body, 6, "phone", "Parent authenticator", "")
         self.totp_desc = c.desc
         self.totp_btn = button(right, "", lambda: app.setup_totp(), kind="secondary", width=160)
         self.totp_btn.pack(anchor="e")
 
         # ---- start with Windows ----
-        self.startup_card, right = self._card(body, 6, "power", "Start automatically", "")
+        self.startup_card, right = self._card(body, 7, "power", "Start automatically", "")
         self.startup_switch = ctk.CTkSwitch(right, text="", command=self.on_startup, **SWITCH)
         self.startup_switch.pack(anchor="e")
 
         # ---- appearance ----
-        c, right = self._card(body, 7, "theme", "Appearance", "Light, dark, or follow Windows.")
+        c, right = self._card(body, 8, "theme", "Appearance", "Light, dark, or follow Windows.")
         self.theme_seg = ctk.CTkSegmentedButton(right, values=["System", "Light", "Dark"], command=self.on_theme,
                                                 font=font(14), width=240, **SEGMENTED)
         self.theme_seg.pack(anchor="e")
@@ -143,6 +148,21 @@ class SettingsPage(ctk.CTkFrame):
         self._refresh_schedule()
         self._refresh_startup()
         self.uploads_switch.select() if cfg.get("allow_uploads") else self.uploads_switch.deselect()
+        self._refresh_answers()
+
+    def _refresh_answers(self):
+        on = bool(self.app.config.get("check_answers"))
+        self.answers_switch.select() if on else self.answers_switch.deselect()
+        self.answers_switch.configure(state="disabled" if self._frozen() and on else "normal")
+        self.answers_card.desc.configure(text=(
+            "Homework is only approved if the answers are right, not just filled in." +
+            (" Can't be turned off while apps are locked." if self._frozen() and on else "")))
+
+    def on_answers(self):
+        want = bool(self.answers_switch.get())
+        if want or not self._frozen():
+            self.app.config.set(check_answers=want)
+        self._refresh_answers()
 
     def _frozen(self) -> bool:
         """In student mode, settings that would loosen the lock can't change while apps are locked."""

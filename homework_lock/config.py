@@ -30,6 +30,7 @@ DEFAULTS = {
     "lock_start": "15:00",        # 24-hour "HH:MM"
     "lock_days": [0, 1, 2, 3, 4], # Monday = 0
     "allow_uploads": True,        # phone may pick existing photos, not only take new ones
+    "check_answers": False,       # the checker also marks wrong answers as not done
     "autostart": True,            # scheduled task that starts the app whenever apps should be locked
     "setup_done": False,          # first-run setup finished
     "install_id": None,           # random ID the online service uses for daily limits (no personal info)

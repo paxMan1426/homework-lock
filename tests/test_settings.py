@@ -169,6 +169,22 @@ def test_parent_can_remove_apps_while_locked(window):
     assert w.config.blocked_apps() == set()
 
 
+def test_check_answers_cant_be_turned_off_while_locked(window):
+    w = window()                                      # student mode, locked by default
+    w.navigate("settings")
+    page = w.pages["settings"]
+    page.answers_switch.select()
+    page.on_answers()
+    assert w.config.get("check_answers") is True      # turning it on is always fine
+    page.answers_switch.deselect()
+    page.on_answers()
+    assert w.config.get("check_answers") is True
+    w.ctl.unlock(10)
+    page.answers_switch.deselect()
+    page.on_answers()
+    assert w.config.get("check_answers") is False
+
+
 def test_settings_page(window):
     w = window()
     w.navigate("settings")

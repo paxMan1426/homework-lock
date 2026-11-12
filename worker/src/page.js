@@ -76,14 +76,13 @@ export function formPage({ allowUploads, maxPages, pageSide, readSide }) {
   return wrap(`
   <div id="scan" hidden>
     <h1>Scan every page</h1>
-    <p>Point the camera at page 1 and hold still. Once a page has been read, you'll be told to flip to the next
-       one. Tap the picture to read a page right away.</p>
+    <p>Point the camera at page 1 and hold still. Once a page has been read, flip to the next one in front of
+       the camera: the flip has to be seen before the next page is read.</p>
     <div class="cam" id="cam"><video id="video" playsinline muted autoplay></video>
       <div class="status" id="status">Starting the camera...</div></div>
     <div class="thumbs" id="thumbs"></div>
     <button id="done" type="button" disabled>Point the camera at page 1</button>
     <div class="err" id="scan-err"></div>
-    <a class="alt" href="#" id="to-photos">Take photos instead</a>
   </div>
   <div id="photos">
   <h1>Show every page</h1>
@@ -192,11 +191,12 @@ export function formPage({ allowUploads, maxPages, pageSide, readSide }) {
 
     // ---- Live scan: hold a page still, it gets read, then flip to the next one ----
     const STILL = 7, MOVED = 18, STEADY_TICKS = 3;  // average brightness change per 120 ms tick, out of 255
+    const FLIP_TICKS = 3;  // ticks in a row of big motion that count as a page being turned
     const TICK_MS = 120, PAGE_SIDE = ${pageSide}, READ_SIDE = ${readSide};
     const $ = id => document.getElementById(id);
     const video = $('video'), statusEl = $('status'), thumbs = $('thumbs'), done = $('done');
     const pages = [];  // {blob, small, url, label}
-    let stream = null, timer = null, state = 'aim', still = 0, prevSmall = null, busy = false, waitUntil = 0;
+    let stream = null, timer = null, state = 'aim', still = 0, prevSmall = null, busy = false, waitUntil = 0, flipping = 0;
     const small = document.createElement('canvas');
 
     function say(text, kind) { statusEl.textContent = text; statusEl.className = 'status' + (kind ? ' ' + kind : ''); }
@@ -248,8 +248,9 @@ export function formPage({ allowUploads, maxPages, pageSide, readSide }) {
     function tick() {
       if (busy || !video.videoWidth) return;
       const m = measure();
-      if (state === 'flip') {          // don't read again until the page has been turned
-        if (m.motion > MOVED) { state = 'aim'; still = 0; say('Hold page ' + (pages.length + 1) + ' still...'); }
+      if (state === 'flip') {          // don't read again until the camera has seen the page being turned
+        flipping = m.motion > MOVED ? flipping + 1 : 0;
+        if (flipping >= FLIP_TICKS) { state = 'aim'; still = 0; flipping = 0; say('Hold page ' + (pages.length + 1) + ' still...'); }
         return;
       }
       if (state !== 'aim') return;
@@ -288,11 +289,11 @@ export function formPage({ allowUploads, maxPages, pageSide, readSide }) {
           addPage(blob, readBlob, a.label);
           if (navigator.vibrate) navigator.vibrate(80);
           if (pages.length >= MAX) { state = 'full'; say('Got page ' + pages.length + '. That is the most pages. Tap Done.', 'ok'); }
-          else { state = 'flip'; say('Got page ' + pages.length + (a.label ? ': ' + a.label : '') +
-                                     '. Flip to the next page, or tap Done if that was the last.', 'ok'); }
+          else { state = 'flip'; flipping = 0; say('Got page ' + pages.length + (a.label ? ': ' + a.label : '') +
+                                     '. Flip to the next page in front of the camera, or tap Done if that was the last.', 'ok'); }
         } else if (a.same) {
-          state = 'flip';
-          say("That's still page " + pages.length + '. Flip to the next page, or tap Done.');
+          state = 'flip'; flipping = 0;
+          say("That's still page " + pages.length + '. Flip the page in front of the camera, or tap Done.');
         } else {
           say((a.tip || "Couldn't read that") + '. Hold page ' + (pages.length + 1) + ' still.', 'bad');
           waitUntil = Date.now() + 700;
@@ -325,7 +326,7 @@ export function formPage({ allowUploads, maxPages, pageSide, readSide }) {
       done.disabled = n === 0;
       done.textContent = n === 0 ? 'Point the camera at page 1' : 'Done - check ' + n + (n === 1 ? ' page' : ' pages');
     }
-    $('cam').addEventListener('click', () => { if (state === 'flip' || state === 'aim') { state = 'aim'; read(); } });
+    $('cam').addEventListener('click', () => { if (state === 'aim') read(); });  // a tap can't skip the flip
     done.addEventListener('click', async () => {
       const n = pages.length;
       stopCamera();
@@ -335,8 +336,7 @@ export function formPage({ allowUploads, maxPages, pageSide, readSide }) {
       if (err) { $('scan-err').textContent = err; drawPages(); startCamera(); }
     });
     if (window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      $('to-photos').onclick = e => { e.preventDefault(); showScan(false); };
-      $('to-scan').hidden = false;
+      $('to-scan').hidden = false;  // photos are only the fallback when the camera won't start
       $('to-scan').onclick = e => { e.preventDefault(); $('err').textContent = ''; showScan(true); };
       showScan(true);
     }

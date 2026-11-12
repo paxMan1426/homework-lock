@@ -43,6 +43,13 @@ In "pages", give one entry per photo, in order. "issue" is a short, specific exp
 "problem 7 is blank") or "" when the page is complete.
 Keep "reason" to one short, friendly sentence addressed to the student.`;
 
+// Added to SYSTEM when the app's "Check answers" setting is on.
+const ANSWERS_RULE = `
+
+Also check that the answers are correct. Work each problem out yourself. A page with a wrong answer is not
+complete: set complete to false and say which problem is wrong in "issue" (for example "problem 4 is wrong"),
+without giving the right answer. Only judge answers you can verify; essays and opinions are judged as before.`;
+
 const SCHEMA = {
   type: "object",
   properties: {
@@ -140,7 +147,7 @@ async function call(env, system, content, schema, maxTokens, effort) {
 }
 
 /** Full check of every page. images: [{bytes, type}]. The images are only ever held in memory. */
-export async function checkPages(env, images, note) {
+export async function checkPages(env, images, note, checkAnswers = false) {
   const n = images.length;
   const content = [];
   images.forEach((img, i) => content.push({ type: "text", text: `Photo ${i + 1} of ${n}:` }, imageBlock(img)));
@@ -148,7 +155,8 @@ export async function checkPages(env, images, note) {
     "the assignment has, and look for signs that pages are missing.";
   if (note) text += `\n\n<student_note>${note}</student_note>`;
   content.push({ type: "text", text });
-  return decide(await call(env, SYSTEM, content, SCHEMA, 2048, "medium"), n);
+  const system = checkAnswers ? SYSTEM + ANSWERS_RULE : SYSTEM;
+  return decide(await call(env, system, content, SCHEMA, checkAnswers ? 4096 : 2048, "medium"), n);
 }
 
 /** Live scan: is this camera frame a readable page, and a different one from the page before? */
